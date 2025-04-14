@@ -7,7 +7,7 @@ from sklearn.preprocessing import StandardScaler
 import time
 
 def generate_xor_data(n, d):
-    X = cp.random.choice([1, -1], size=(n, d), dtype=cp.float32) / cp.sqrt(d)
+    X = cp.random.choice([1, -1], size=(n, d)) / cp.sqrt(d)
     y = cp.sign(X[:, 0] * X[:, 1]).astype(cp.float32)
     return X, y
 
@@ -147,12 +147,12 @@ params_ntk = {
     'd': 20,
     'n_train': 500,
     'n_test': 200,
-    'num_neurons': 200, # Corresponds to num_particles in MF/MFLD
-    'eta': 0.1,       # Learning rate for output weights might need tuning
-    'T_total': 300,     # Total iterations
+    'num_neurons': 1000, # Corresponds to num_particles in MF/MFLD
+    'eta': 0.05,       # Learning rate for output weights might need tuning
+    'T_total': 1500,     # Total iterations
     'R_bar': 15,
     'save_dir': SAVE_DIR_NTK,
-    'store_interval': 50 # Store state less frequently
+    'store_interval': 100 # Store state less frequently
 }
 
 # Run NTK simulation and store results

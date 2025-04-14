@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=large_mfld_feature_learn
-#SBATCH --output /home/ddz5/Desktop/sds659/src/slurm/logs/large_1000_particles_mfld_feature_learn_%j.log
+#SBATCH --job-name=small_mfld_feature_learn
+#SBATCH --output /home/ddz5/Desktop/sds659/src/slurm/logs/small_200_particles_mfld_feature_learn_%j.log
 #SBATCH --mail-type=ALL                            # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=david.zhang.ddz5@yale.edu                   # Where to send mail
 #SBATCH --partition gpu

@@ -8,7 +8,7 @@ import time
 
 def generate_xor_data(n, d):
     # Generate data from {±1/sqrt(d)}^d and labels as XOR of first 2 features.
-    X = cp.random.choice([1, -1], size=(n, d), dtype=cp.float32) / cp.sqrt(d)
+    X = cp.random.choice([1, -1], size=(n, d)) / cp.sqrt(d)
     y = cp.sign(X[:, 0] * X[:, 1]).astype(cp.float32)
     return X, y
 
@@ -78,7 +78,7 @@ def update_particles_mf(particles, X, y, eta, lambda_1, R_bar=15):
         grad_loss = cp.zeros_like(x)
         # Accumulate gradient contributions from all training data
         for i in range(n):
-            grad_loss += (loss_derivs[i] * y[i]) * neuron_grad(x, X[i], R_bar)
+            grad_loss += loss_derivs[i] * neuron_grad(x, X[i], R_bar)
         grad_loss = grad_loss / n # Corrected typo
         grad_reg = 2 * lambda_1 * x
         grad = grad_loss + grad_reg
@@ -140,8 +140,6 @@ def run_simulation_mf_and_store(d=20, n_train=500, n_test=200,
     acc_data = np.array([(item['iteration'], item['accuracy']) for item in accuracy_history],
                         dtype=[('iteration', 'i4'), ('accuracy', 'f4')])
     np.save(os.path.join(save_dir, 'accuracy_history.npy'), acc_data)
-    # Alternative: save as CSV
-    # np.savetxt(os.path.join(save_dir, 'accuracy_history.csv'), acc_data, delimiter=',', header='iteration,accuracy', comments='')
 
     end_time = time.time()
     print(f"\nSimulation finished in {end_time - start_time:.2f} seconds.")
@@ -158,13 +156,13 @@ params = {
     'd': 20,
     'n_train': 500,
     'n_test': 200,
-    'num_particles': 200, 
+    'num_particles': 1000, 
     'eta': 0.05,
-    'T_total': 300, # Total iterations (e.g., 6 rounds * 50 steps/round)
+    'T_total': 1500, # Total iterations (e.g., 6 rounds * 250 steps/round)
     'lambda_1': 0.1,
     'R_bar': 15,
     'save_dir': SAVE_DIR_MF,
-    'store_interval': 50 # Store state every 100 iterations
+    'store_interval': 100 # Store state every 100 iterations
 }
 
 # Run simulation and store results

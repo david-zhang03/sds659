@@ -4,6 +4,8 @@ import numpy as np
 import cupy as cp
 
 import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 def generate_xor_data(n, d):
     # Generate data from {±1/sqrt(d)}^d and labels as XOR of first 2 features.
@@ -67,7 +69,7 @@ def update_particles(particles, X, y, eta, lam, lambda_1, R_bar=15):
         grad_loss = cp.zeros_like(x)
         # Accumulate gradient contributions from all training data
         for i in range(n):
-            grad_loss += (loss_derivs[i] * y[i]) * neuron_grad(x, X[i], R_bar)
+            grad_loss += loss_derivs[i] * neuron_grad(x, X[i], R_bar)
         grad_loss = grad_loss / n
         grad_reg = 2 * lambda_1 * x
         grad = grad_loss + grad_reg
@@ -141,7 +143,8 @@ def run_simulation_and_store(d=20, n_train=500, n_test=200,
         acc = evaluate_accuracy(particles, X_test, y_test, R_bar)
         # Result should be float now, no need for cp.asnumpy
         print(f"Test accuracy after round {round_actual}: {acc:.4f}")
-        accuracy_history.append(acc)
+        # acc is some cp.data_type (e.g. cp.float64?) --> convert to np scalar for later save
+        accuracy_history.append(acc.get())
         lam_history.append(lam_current)
 
         lam_current *= 0.5
@@ -154,13 +157,13 @@ def run_simulation_and_store(d=20, n_train=500, n_test=200,
     return particle_history, accuracy_history, lam_history
 
 cp.random.seed(42)
-SAVE_DIR = "/home/ddz5/Desktop/sds659/results/mfld_results_large"
+SAVE_DIR = "/home/ddz5/Desktop/sds659/results/mfld_results"
 
 # Run simulation and store results
 particle_history, accuracy_history, lam_history = run_simulation_and_store(
     d=20, n_train=500, n_test=200,
     num_particles=1000,
-    eta=0.05, T_per_round=50,
+    eta=0.05, T_per_round=250,
     num_rounds=6, lam_init=0.1,
     lambda_1=0.1,
     R_bar=15,
