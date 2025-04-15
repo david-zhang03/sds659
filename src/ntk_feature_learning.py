@@ -17,6 +17,9 @@ def neuron_activation(x, z, R_bar=15):
     b = x[d+1]
     return R_bar * (cp.tanh(a) + 2 * cp.tanh(b)) / 3.0
 
+def d_logistic_loss(f, y):
+    return -y / (1.0 + cp.exp(y * f))
+
 # --- NTK Specific Prediction and Evaluation ---
 
 def ntk_predict(a, neurons, z, R_bar=15):
@@ -59,8 +62,8 @@ def run_ntk_simulation_and_store(d=20, n_train=500, n_test=200,
     X_train, y_train = generate_xor_data(n_train, d)
     X_test, y_test = generate_xor_data(n_test, d)
 
-    # Initialize fixed neurons (on GPU)
-    neurons = [cp.random.randn(d+2, dtype=cp.float32) for _ in range(num_neurons)]
+    # Initialize fixed neurons (scale with 1 / \sqrt{d+2} should be more stable)
+    neurons = [cp.random.randn(d+2, dtype=cp.float32) / cp.sqrt(d+2) for _ in range(num_neurons)]
     # Initialize trainable output weights (on GPU)
     a = cp.ones(num_neurons, dtype=cp.float32) # Start with equal weights
 
@@ -93,16 +96,13 @@ def run_ntk_simulation_and_store(d=20, n_train=500, n_test=200,
         # Vectorized calculation: mean(a * train_activations, axis=1)
         f_preds = cp.mean(a * train_activations, axis=1) # Efficient calculation
 
-        # Compute loss derivative for each sample based on current predictions
+        # Compute loss derivative for each sample based on current predictions (recall the loss here doesn't really matter in NTK)
         loss_derivs = cp.array([d_logistic_loss(f_preds[i], y_train[i]) for i in range(n)])
 
         # Compute gradient ONLY for output weights 'a'
         # grad_a[j] = mean_over_data [ dL/df_i * df_i/da_j ]
         # df_i/da_j = (1/N) * h_{x_j0}(z_i) = (1/N) * train_activations[i, j]
         # grad_a[j] = mean_over_data [ loss_derivs[i] * (1/N) * train_activations[i, j] ]
-        # Correcting the gradient from previous script attempt:
-        # Need elementwise product loss_derivs * train_activations, then mean over data axis (axis=0)
-        # Should y_train be included? dL/da_j = dL/df * df/da_j. d_logistic_loss gives dL/df.
         grad_a_contributions = loss_derivs[:, cp.newaxis] * train_activations # Shape (n, N)
         grad_a = cp.mean(grad_a_contributions, axis=0) / N # Average over data, include 1/N from prediction func
 
@@ -113,6 +113,9 @@ def run_ntk_simulation_and_store(d=20, n_train=500, n_test=200,
         if (t + 1) % store_interval == 0 or t == T_total - 1:
             iter_actual = t + 1
             print(f"--- Iteration {iter_actual}/{T_total} ---")
+
+            avg_loss = cp.mean(cp.log1p(cp.exp(-y_train * f_preds)))
+            print(f"Avg logistic loss at iter {t+1}: {avg_loss:.4f}")
 
             # Save output weights 'a'
             print(f"Storing output weights 'a' at iteration {iter_actual}...")
